@@ -22,6 +22,11 @@ const dirname = path.dirname(filename)
 const serverURL = process.env.NEXT_PUBLIC_SERVER_URL
 const siteName = process.env.NEXT_PUBLIC_SITE_NAME || 'Boxcar'
 
+// Only register R2 storage when bucket + endpoint are set. Without them, the
+// Media collection falls back to Payload's built-in local-filesystem storage
+// so the app still boots — useful for the first Railway deploy and local dev.
+const r2Configured = Boolean(process.env.R2_BUCKET && process.env.R2_ENDPOINT)
+
 export default buildConfig({
   admin: {
     user: Users.slug,
@@ -53,26 +58,30 @@ export default buildConfig({
   }),
   sharp,
   plugins: [
-    s3Storage({
-      collections: {
-        media: {
-          prefix: 'media',
-        },
-      },
-      bucket: process.env.R2_BUCKET || '',
-      // R2 ignores the canned ACL but the upstream cloud-storage plugin sends one;
-      // 'public-read' is the closest no-op for R2 buckets configured as public.
-      acl: 'public-read',
-      config: {
-        endpoint: process.env.R2_ENDPOINT,
-        credentials: {
-          accessKeyId: process.env.R2_ACCESS_KEY_ID || '',
-          secretAccessKey: process.env.R2_SECRET_ACCESS_KEY || '',
-        },
-        region: 'auto',
-        forcePathStyle: true,
-      },
-    }),
+    ...(r2Configured
+      ? [
+          s3Storage({
+            collections: {
+              media: {
+                prefix: 'media',
+              },
+            },
+            bucket: process.env.R2_BUCKET as string,
+            // R2 ignores the canned ACL but the upstream cloud-storage plugin sends one;
+            // 'public-read' is the closest no-op for R2 buckets configured as public.
+            acl: 'public-read',
+            config: {
+              endpoint: process.env.R2_ENDPOINT,
+              credentials: {
+                accessKeyId: process.env.R2_ACCESS_KEY_ID || '',
+                secretAccessKey: process.env.R2_SECRET_ACCESS_KEY || '',
+              },
+              region: 'auto',
+              forcePathStyle: true,
+            },
+          }),
+        ]
+      : []),
     seoPlugin({
       collections: ['posts', 'pages'],
       uploadsCollection: 'media',
