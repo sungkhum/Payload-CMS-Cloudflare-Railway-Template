@@ -23,10 +23,6 @@ const dirname = path.dirname(filename)
 const serverURL = process.env.NEXT_PUBLIC_SERVER_URL
 const siteName = process.env.NEXT_PUBLIC_SITE_NAME || 'Boxcar'
 
-// Only register R2 storage when bucket + endpoint are set. Without them, the
-// Media collection falls back to Payload's built-in local-filesystem storage
-// so the app still boots — useful for the first Railway deploy and local dev.
-const r2Configured = Boolean(process.env.R2_BUCKET && process.env.R2_ENDPOINT)
 
 export default buildConfig({
   admin: {
@@ -71,30 +67,33 @@ export default buildConfig({
   }),
   sharp,
   plugins: [
-    ...(r2Configured
-      ? [
-          s3Storage({
-            collections: {
-              media: {
-                prefix: 'media',
-              },
-            },
-            bucket: process.env.R2_BUCKET as string,
-            // R2 ignores the canned ACL but the upstream cloud-storage plugin sends one;
-            // 'public-read' is the closest no-op for R2 buckets configured as public.
-            acl: 'public-read',
-            config: {
-              endpoint: process.env.R2_ENDPOINT,
-              credentials: {
-                accessKeyId: process.env.R2_ACCESS_KEY_ID || '',
-                secretAccessKey: process.env.R2_SECRET_ACCESS_KEY || '',
-              },
-              region: 'auto',
-              forcePathStyle: true,
-            },
-          }),
-        ]
-      : []),
+    // Always register s3Storage. If R2_BUCKET / R2_ENDPOINT are unset, the
+    // plugin no-ops uploads (clientProps.enabled becomes false) but stays in
+    // the importMap — important because `payload generate:importmap` runs at
+    // build time when R2_* vars aren't available, and a runtime-only plugin
+    // registration would leave the admin's upload handler missing from the
+    // map and break the Media collection UI.
+    s3Storage({
+      collections: {
+        media: {
+          prefix: 'media',
+        },
+      },
+      enabled: Boolean(process.env.R2_BUCKET && process.env.R2_ENDPOINT),
+      bucket: process.env.R2_BUCKET || '',
+      // R2 ignores the canned ACL but the upstream cloud-storage plugin sends one;
+      // 'public-read' is the closest no-op for R2 buckets configured as public.
+      acl: 'public-read',
+      config: {
+        endpoint: process.env.R2_ENDPOINT,
+        credentials: {
+          accessKeyId: process.env.R2_ACCESS_KEY_ID || '',
+          secretAccessKey: process.env.R2_SECRET_ACCESS_KEY || '',
+        },
+        region: 'auto',
+        forcePathStyle: true,
+      },
+    }),
     seoPlugin({
       collections: ['posts', 'pages'],
       uploadsCollection: 'media',
