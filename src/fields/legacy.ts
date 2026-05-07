@@ -5,6 +5,10 @@ export const legacyField: Field = {
   type: 'group',
   label: 'Legacy WordPress',
   admin: {
+    // Hidden from the admin UI — purely a server-side handhold for the WP
+    // migration script. The fields still exist in the DB and the REST/
+    // GraphQL APIs so the script can write them.
+    hidden: true,
     position: 'sidebar',
     description: 'Populated by the WP migration script — do not edit manually.',
   },

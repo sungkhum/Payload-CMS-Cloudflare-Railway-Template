@@ -21,6 +21,14 @@ export const Posts: CollectionConfig = {
   admin: {
     useAsTitle: 'title',
     defaultColumns: ['title', 'authors', 'publishedAt', '_status'],
+    components: {
+      edit: {
+        // Custom Publish button that switches its label to "Schedule
+        // Post" when publishedAt is in the future. See the file for
+        // coupling surfaces.
+        PublishButton: '/components/admin/SchedulePublishButton',
+      },
+    },
   },
   access: {
     read: authenticatedOrPublished,
@@ -76,6 +84,10 @@ export const Posts: CollectionConfig = {
     {
       name: 'publishedAt',
       type: 'date',
+      // Default to "now, snapped to the nearest 30-min boundary" so the
+      // form is ready to publish immediately without the editor having to
+      // pick a date. They only touch the picker when scheduling.
+      defaultValue: () => snapToHalfHour(new Date()).toISOString(),
       admin: {
         position: 'sidebar',
         date: {
@@ -143,7 +155,6 @@ export const Posts: CollectionConfig = {
           await req.payload.jobs.queue({
             task: 'publishScheduledPost',
             input: {
-              collection: 'posts',
               docId: String(doc.id),
               expectedPublishedAt: new Date(doc.publishedAt).toISOString(),
             },

@@ -4,7 +4,6 @@ import type { TaskConfig } from 'payload'
 // at the TypeScript level (it stays `JsonObject | undefined`). Declare the
 // shape once and cast inside the handler so the rest of the body is typed.
 type PublishScheduledPostInput = {
-  collection: string
   docId: string
   expectedPublishedAt: string
 }
@@ -24,7 +23,6 @@ type PublishScheduledPostInput = {
 export const publishScheduledPostTask: TaskConfig<'publishScheduledPost'> = {
   slug: 'publishScheduledPost',
   inputSchema: [
-    { name: 'collection', type: 'text', required: true },
     { name: 'docId', type: 'text', required: true },
     // Captured at enqueue time; the handler refuses to publish if the doc's
     // current publishedAt no longer matches (= user rescheduled).
@@ -32,12 +30,12 @@ export const publishScheduledPostTask: TaskConfig<'publishScheduledPost'> = {
   ],
   outputSchema: [],
   handler: async ({ input, req }) => {
-    const { collection, docId, expectedPublishedAt } = input as PublishScheduledPostInput
+    const { docId, expectedPublishedAt } = input as PublishScheduledPostInput
 
     let doc
     try {
       doc = await req.payload.findByID({
-        collection: collection as never,
+        collection: 'posts',
         id: docId,
         req,
         depth: 0,
@@ -59,7 +57,7 @@ export const publishScheduledPostTask: TaskConfig<'publishScheduledPost'> = {
     }
 
     await req.payload.update({
-      collection: collection as never,
+      collection: 'posts',
       id: docId,
       data: { _status: 'published' },
       req,

@@ -38,7 +38,7 @@ export const PublishedAtDescription = () => {
 
   return (
     <span style={{ color: 'var(--theme-success-500, var(--theme-elevation-700))' }}>
-      Scheduled — will publish {when} ({target.toLocaleString()}). Click Publish to commit.
+      Will publish {when} ({target.toLocaleString()}). Click Schedule Post to commit.
     </span>
   )
 }
