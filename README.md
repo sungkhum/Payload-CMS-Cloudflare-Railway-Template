@@ -2,6 +2,8 @@
 
 A Payload v3 + Next.js blog boilerplate, ready to deploy on **Railway** with **PostgreSQL** and **Cloudflare R2** for media. Clone it, fill in a `.env`, push to Railway — you have a blog.
 
+[![Deploy on Railway](https://railway.com/button.svg)](https://railway.com/deploy/boxcar-payload-cms-cloudflare-r2?referralCode=6EnXto&utm_medium=integration&utm_source=template&utm_campaign=generic)
+
 **Stack**
 
 - Payload 3.84 + Next.js 16 (single app: admin at `/admin`, public site at `/`)
