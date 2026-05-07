@@ -1,22 +1,12 @@
 import type { Where } from 'payload'
 
 /**
- * Where clause for Posts that should be visible to the public:
- * status === 'published' AND publishedAt is now or in the past.
+ * Where clause for Posts that should be visible to the public.
  *
- * A future `publishedAt` is the convention for scheduled posts — the doc
- * is saved as published but invisible until the date arrives. The frontend
- * is `force-dynamic`, so each request re-evaluates `now()` and a scheduled
- * post starts showing automatically once its time passes.
+ * Scheduled posts live as `_status: draft` (with a future `publishedAt`)
+ * until the `publishScheduledPost` job flips them. So a simple status check
+ * is enough — no date math needed at the read site.
  */
 export const publicPostsWhere = (): Where => ({
-  and: [
-    { _status: { equals: 'published' } },
-    {
-      or: [
-        { publishedAt: { exists: false } },
-        { publishedAt: { less_than_equal: new Date().toISOString() } },
-      ],
-    },
-  ],
+  _status: { equals: 'published' },
 })

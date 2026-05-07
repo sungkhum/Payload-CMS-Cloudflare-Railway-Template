@@ -80,12 +80,59 @@ export const Posts: CollectionConfig = {
   hooks: {
     beforeChange: [
       ({ data, operation }) => {
-        if (operation === 'create' || operation === 'update') {
-          if (data?._status === 'published' && !data.publishedAt) {
-            data.publishedAt = new Date().toISOString()
-          }
+        if (operation !== 'create' && operation !== 'update') return data
+        if (data?._status !== 'published') return data
+
+        const now = new Date()
+        const target = data.publishedAt ? new Date(data.publishedAt) : null
+
+        if (target && target.getTime() > now.getTime()) {
+          // Publishing with a future date = schedule. Demote to draft so the
+          // post stays hidden until the cron fires; the afterChange hook will
+          // enqueue a `publishScheduledPost` job to flip it back at `publishedAt`.
+          data._status = 'draft'
+          return data
+        }
+
+        // Otherwise: regular publish. Fill publishedAt if blank.
+        if (!data.publishedAt) {
+          data.publishedAt = now.toISOString()
         }
         return data
+      },
+    ],
+    afterChange: [
+      async ({ doc, operation, req }) => {
+        if (operation !== 'create' && operation !== 'update') return doc
+
+        const isScheduled =
+          doc._status === 'draft' &&
+          doc.publishedAt &&
+          new Date(doc.publishedAt).getTime() > Date.now()
+
+        if (!isScheduled) return doc
+
+        // Enqueue the publish job. The handler is idempotent — if the doc is
+        // saved again with a different publishedAt, the old job will see a
+        // mismatch when it runs and no-op.
+        try {
+          await req.payload.jobs.queue({
+            task: 'publishScheduledPost',
+            input: {
+              collection: 'posts',
+              docId: String(doc.id),
+              expectedPublishedAt: new Date(doc.publishedAt).toISOString(),
+            },
+            waitUntil: new Date(doc.publishedAt),
+          })
+        } catch (err) {
+          req.payload.logger.error(
+            { err, docId: doc.id },
+            'Failed to enqueue scheduled-publish job',
+          )
+        }
+
+        return doc
       },
     ],
   },

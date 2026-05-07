@@ -15,6 +15,7 @@ import { Pages } from './collections/Pages'
 import { Posts } from './collections/Posts'
 import { Tags } from './collections/Tags'
 import { Users } from './collections/Users'
+import { publishScheduledPostTask } from './lib/tasks/publishScheduledPost'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
@@ -109,4 +110,13 @@ export default buildConfig({
       },
     }),
   ],
+  // Jobs queue: powers our scheduled-publish flow. Editors set a future
+  // publishedAt and click Publish; the Posts afterChange hook enqueues a
+  // `publishScheduledPost` job here, and the autoRun cron flips _status
+  // from draft to published when the time arrives.
+  jobs: {
+    tasks: [publishScheduledPostTask],
+    autoRun: [{ cron: '* * * * *', queue: 'default' }],
+    shouldAutoRun: () => true,
+  },
 })

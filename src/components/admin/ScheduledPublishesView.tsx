@@ -1,7 +1,11 @@
 /**
- * Custom admin view at /admin/scheduled — lists Posts whose `publishedAt`
- * is in the future (= scheduled to go live automatically once their date
- * arrives, by virtue of the `publicPostsWhere` filter on the public site).
+ * Custom admin view at /admin/scheduled — lists Posts that are queued to
+ * auto-publish via the `publishScheduledPost` job. A post sits in this
+ * view from the moment an editor "publishes" with a future date (the
+ * Posts beforeChange hook demotes it to draft and the afterChange hook
+ * enqueues a job) until the cron fires and flips _status → published.
+ *
+ * Query convention: `_status: draft` AND `publishedAt > now()`.
  *
  * Payload public-API surfaces this view depends on (smoke-test on upgrades):
  *   1. `admin.components.views` server-component prop shape (`AdminViewServerProps`).
@@ -10,9 +14,8 @@
  *      with the admin shell.
  *
  * Deliberately avoided: any import from `@payloadcms/ui`, any deep import
- * from `payload/dist`. The view doesn't touch Payload's internal job queue
- * or scheduling internals — scheduling is just "_status=published with a
- * future publishedAt", which the public site's access filter respects.
+ * from `payload/dist`. The view doesn't touch the `payload-jobs` collection
+ * directly — scheduling intent is encoded on the post itself.
  */
 import type { AdminViewServerProps } from 'payload'
 import { getPayload } from 'payload'
@@ -42,13 +45,14 @@ const ScheduledPublishesView = async ({ initPageResult }: AdminViewServerProps) 
       collection: 'posts',
       where: {
         and: [
-          { _status: { equals: 'published' } },
+          { _status: { equals: 'draft' } },
           { publishedAt: { greater_than: new Date().toISOString() } },
         ],
       },
       sort: 'publishedAt',
       limit: 100,
       depth: 0,
+      draft: true,
       overrideAccess: false,
       user: req.user,
     })
