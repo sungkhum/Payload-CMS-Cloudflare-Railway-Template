@@ -3,7 +3,9 @@ services:
     image: postgres:16-alpine
     restart: unless-stopped
     ports:
-      - '5432:5432'
+      # Host 5431 → container 5432 (Postgres image always listens on 5432).
+      # Using 5431 on the host avoids clashing with another local Postgres.
+      - '5431:5432'
     environment:
       POSTGRES_USER: payload
       POSTGRES_PASSWORD: payload

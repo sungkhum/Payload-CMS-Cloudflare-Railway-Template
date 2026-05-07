@@ -6,6 +6,7 @@
   "type": "module",
   "scripts": {
     "build": "cross-env NODE_OPTIONS=\"--no-deprecation --max-old-space-size=8000\" payload generate:importmap && cross-env NODE_OPTIONS=\"--no-deprecation --max-old-space-size=8000\" next build",
+    "postinstall": "node -e \"require('fs').existsSync('src/payload.config.ts') && require('child_process').execSync('pnpm generate:importmap',{stdio:'inherit'})\"",
     "dev": "cross-env NODE_OPTIONS=--no-deprecation next dev -p ${PORT:-3125}",
     "devsafe": "rm -rf .next && cross-env NODE_OPTIONS=--no-deprecation next dev -p ${PORT:-3125}",
     "start": "cross-env NODE_OPTIONS=--no-deprecation next start -H 0.0.0.0 -p ${PORT:-3125}",
