@@ -5,6 +5,17 @@ import { authenticatedOrPublished } from '../access/authenticatedOrPublished'
 import { legacyField } from '../fields/legacy'
 import { slugField } from '../fields/slug'
 
+// Snap a Date to the nearest 30-minute boundary in UTC. Round (not floor)
+// so a post saved at 14:14 publishes at 14:00 and 14:16 publishes at 14:30
+// — closest to what the user picked.
+function snapToHalfHour(d: Date): Date {
+  const r = new Date(d)
+  const minutes = r.getUTCMinutes()
+  const snapped = Math.round(minutes / 30) * 30
+  r.setUTCMinutes(snapped, 0, 0)
+  return r
+}
+
 export const Posts: CollectionConfig = {
   slug: 'posts',
   admin: {
@@ -67,7 +78,12 @@ export const Posts: CollectionConfig = {
       type: 'date',
       admin: {
         position: 'sidebar',
-        date: { pickerAppearance: 'dayAndTime' },
+        date: {
+          pickerAppearance: 'dayAndTime',
+          // Cron runs every 30 min, so the picker only offers slots
+          // aligned to those boundaries (:00 / :30).
+          timeIntervals: 30,
+        },
         // Dynamic description: shows "Scheduled — will publish in N days"
         // when set to a future date, otherwise "Publishes immediately."
         components: {
@@ -83,6 +99,14 @@ export const Posts: CollectionConfig = {
         if (operation !== 'create' && operation !== 'update') return data
         if (data?._status !== 'published') return data
 
+        // Snap publishedAt to the nearest 30-minute boundary so it lines
+        // up with the cron service that fires at :00 and :30 each hour.
+        // (The picker enforces this in the UI; this is the safety net for
+        // API/programmatic writes.)
+        if (data.publishedAt) {
+          data.publishedAt = snapToHalfHour(new Date(data.publishedAt)).toISOString()
+        }
+
         const now = new Date()
         const target = data.publishedAt ? new Date(data.publishedAt) : null
 
@@ -96,7 +120,7 @@ export const Posts: CollectionConfig = {
 
         // Otherwise: regular publish. Fill publishedAt if blank.
         if (!data.publishedAt) {
-          data.publishedAt = now.toISOString()
+          data.publishedAt = snapToHalfHour(now).toISOString()
         }
         return data
       },

@@ -1,5 +1,14 @@
 import type { TaskConfig } from 'payload'
 
+// Payload's `inputSchema` doesn't flow into the handler's `input` argument
+// at the TypeScript level (it stays `JsonObject | undefined`). Declare the
+// shape once and cast inside the handler so the rest of the body is typed.
+type PublishScheduledPostInput = {
+  collection: string
+  docId: string
+  expectedPublishedAt: string
+}
+
 /**
  * Custom Payload task: flips a post's `_status` from `draft` to `published`
  * at the time the job's `waitUntil` arrives. Enqueued by the Posts
@@ -23,7 +32,7 @@ export const publishScheduledPostTask: TaskConfig<'publishScheduledPost'> = {
   ],
   outputSchema: [],
   handler: async ({ input, req }) => {
-    const { collection, docId, expectedPublishedAt } = input
+    const { collection, docId, expectedPublishedAt } = input as PublishScheduledPostInput
 
     let doc
     try {

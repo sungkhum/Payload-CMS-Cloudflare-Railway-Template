@@ -18,7 +18,8 @@
     "migrate:create": "cross-env NODE_OPTIONS=--no-deprecation payload migrate:create",
     "migrate:status": "cross-env NODE_OPTIONS=--no-deprecation payload migrate:status",
     "migrate:fresh": "cross-env NODE_OPTIONS=--no-deprecation payload migrate:fresh",
-    "migrate:wp": "cross-env NODE_OPTIONS=--no-deprecation tsx scripts/migrate-wordpress.ts"
+    "migrate:wp": "cross-env NODE_OPTIONS=--no-deprecation tsx scripts/migrate-wordpress.ts",
+    "jobs:run": "cross-env NODE_OPTIONS=--no-deprecation tsx scripts/run-jobs.ts"
   },
   "dependencies": {
     "@payloadcms/db-postgres": "3.84.1",
