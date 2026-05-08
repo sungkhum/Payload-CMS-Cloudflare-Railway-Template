@@ -8,16 +8,29 @@ import { Separator } from '@/components/ui/separator'
 // Cache for 60s; admin edits trigger revalidatePath via Posts afterChange hooks.
 export const revalidate = 60
 
-export default async function HomePage() {
+async function loadHomePosts() {
   const payload = await getPayload({ config })
-
-  const { docs: posts } = await payload.find({
+  const { docs } = await payload.find({
     collection: 'posts',
     where: publicPostsWhere(),
     sort: '-publishedAt',
     limit: 10,
     depth: 1,
   })
+  return docs
+}
+
+export default async function HomePage() {
+  // Wrap the Payload query so build-time prerender doesn't abort if the DB
+  // isn't reachable (Docker build doesn't get DATABASE_URI as a build ARG).
+  // After deploy, the first runtime request fetches real data and the ISR
+  // cache refreshes from there.
+  let posts: Awaited<ReturnType<typeof loadHomePosts>> = []
+  try {
+    posts = await loadHomePosts()
+  } catch (err) {
+    console.error('HomePage: failed to load posts from Payload', err)
+  }
 
   const [hero, ...rest] = posts
 
