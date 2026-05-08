@@ -3,6 +3,7 @@ import { RichText } from '@payloadcms/richtext-lexical/react'
 import { getPayload } from 'payload'
 import type { Metadata } from 'next'
 import type { Where } from 'payload'
+import type { Post } from '@/payload-types'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
@@ -49,7 +50,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     limit: 1,
     depth: 1,
   })
-  const post = docs[0]
+  const post = docs[0] as Post | undefined
   if (!post) return {}
 
   const titleSuffix = post.title.length > 50 ? '' : ` — ${siteName}`
@@ -96,7 +97,7 @@ export default async function PostPage({ params }: Props) {
     depth: 2,
   })
 
-  const post = docs[0]
+  const post = docs[0] as Post | undefined
   if (!post) notFound()
 
   const featured = getFeaturedImage(post)
