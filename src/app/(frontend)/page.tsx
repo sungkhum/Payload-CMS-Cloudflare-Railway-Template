@@ -5,7 +5,8 @@ import { formatDate } from '@/lib/utils'
 import { publicPostsWhere } from '@/lib/queries'
 import { Separator } from '@/components/ui/separator'
 
-export const dynamic = 'force-dynamic'
+// Cache for 60s; admin edits trigger revalidatePath via Posts afterChange hooks.
+export const revalidate = 60
 
 export default async function HomePage() {
   const payload = await getPayload({ config })

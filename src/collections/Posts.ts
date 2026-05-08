@@ -4,6 +4,7 @@ import { authenticated } from '../access/authenticated'
 import { authenticatedOrPublished } from '../access/authenticatedOrPublished'
 import { legacyField } from '../fields/legacy'
 import { slugField } from '../fields/slug'
+import { revalidatePostPaths } from '../lib/revalidate'
 
 // Snap a Date to the nearest 30-minute boundary in UTC. Round (not floor)
 // so a post saved at 14:14 publishes at 14:00 and 14:16 publishes at 14:30
@@ -138,8 +139,16 @@ export const Posts: CollectionConfig = {
       },
     ],
     afterChange: [
-      async ({ doc, operation, req }) => {
+      async ({ doc, previousDoc, operation, req }) => {
         if (operation !== 'create' && operation !== 'update') return doc
+
+        // Invalidate Next.js ISR cache for affected paths so admin edits
+        // appear without waiting for the natural 60s revalidation.
+        revalidatePostPaths(doc.slug)
+        if (previousDoc?.slug && previousDoc.slug !== doc.slug) {
+          // Slug changed — bust the old URL too.
+          revalidatePostPaths(previousDoc.slug)
+        }
 
         const isScheduled =
           doc._status === 'draft' &&
@@ -168,6 +177,11 @@ export const Posts: CollectionConfig = {
         }
 
         return doc
+      },
+    ],
+    afterDelete: [
+      ({ doc }) => {
+        revalidatePostPaths(doc?.slug)
       },
     ],
   },

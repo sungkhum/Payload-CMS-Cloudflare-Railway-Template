@@ -97,7 +97,12 @@ export default buildConfig({
     seoPlugin({
       collections: ['posts', 'pages'],
       uploadsCollection: 'media',
-      generateTitle: ({ doc }) => (doc?.title ? `${doc.title} — ${siteName}` : siteName),
+      generateTitle: ({ doc }) => {
+        if (!doc?.title) return siteName
+        // Skip the " — siteName" suffix for already-long titles so they
+        // don't get truncated past the SERP's ~60-char window.
+        return doc.title.length > 50 ? doc.title : `${doc.title} — ${siteName}`
+      },
       generateDescription: ({ doc }) => doc?.excerpt || '',
     }),
     redirectsPlugin({

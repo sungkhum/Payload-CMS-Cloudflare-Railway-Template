@@ -4,6 +4,7 @@ import { authenticated } from '../access/authenticated'
 import { authenticatedOrPublished } from '../access/authenticatedOrPublished'
 import { legacyField } from '../fields/legacy'
 import { slugField } from '../fields/slug'
+import { revalidatePagePaths } from '../lib/revalidate'
 
 export const Pages: CollectionConfig = {
   slug: 'pages',
@@ -29,4 +30,19 @@ export const Pages: CollectionConfig = {
     { name: 'content', type: 'richText' },
     legacyField,
   ],
+  hooks: {
+    afterChange: [
+      ({ doc, previousDoc }) => {
+        revalidatePagePaths(doc.slug)
+        if (previousDoc?.slug && previousDoc.slug !== doc.slug) {
+          revalidatePagePaths(previousDoc.slug)
+        }
+      },
+    ],
+    afterDelete: [
+      ({ doc }) => {
+        revalidatePagePaths(doc?.slug)
+      },
+    ],
+  },
 }

@@ -1,5 +1,7 @@
 import type { TaskConfig } from 'payload'
 
+import { revalidatePostPaths } from '../revalidate'
+
 // Payload's `inputSchema` doesn't flow into the handler's `input` argument
 // at the TypeScript level (it stays `JsonObject | undefined`). Declare the
 // shape once and cast inside the handler so the rest of the body is typed.
@@ -63,6 +65,10 @@ export const publishScheduledPostTask: TaskConfig<'publishScheduledPost'> = {
       req,
       overrideAccess: true,
     })
+
+    // Bust the ISR cache so the post appears on the public site
+    // immediately after the cron flips status (not on next 60s revalidate).
+    revalidatePostPaths((doc as { slug?: string | null }).slug)
 
     return { output: {} }
   },

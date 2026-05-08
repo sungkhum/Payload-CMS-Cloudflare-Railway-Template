@@ -4,6 +4,7 @@ import { GeistSans } from 'geist/font/sans'
 import { ThemeProvider } from '@/components/theme-provider'
 import { SiteHeader } from '@/components/site-header'
 import { SiteFooter } from '@/components/site-footer'
+import { websiteJsonLd } from '@/lib/jsonld'
 import './styles.css'
 
 const newsreader = Newsreader({
@@ -36,6 +37,10 @@ export default function FrontendLayout({ children }: { children: React.ReactNode
       className={`${newsreader.variable} ${fraunces.variable} ${GeistSans.variable}`}
     >
       <body className="flex min-h-dvh flex-col">
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteJsonLd()) }}
+        />
         <ThemeProvider
           attribute="class"
           defaultTheme="system"
